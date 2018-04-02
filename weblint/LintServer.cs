@@ -125,6 +125,31 @@ namespace Dialogic.Server
             return html;
         }
 
+        public static string SendPostResponse(HttpListenerRequest request) {
+            
+            var html = IndexPageContent;
+            string code = ParsePostData(request);
+            var response = "";
+
+            if (String.IsNullOrEmpty(code))
+            {
+                return html.Replace("%%CODE%%", "Enter your code here");
+            }
+
+            try
+            {
+                string content = ParserText(code, noValidators);
+                response = content; 
+            }
+            catch (ParseException ex)
+            {
+                response = ex.Message;
+            }
+
+            return response;
+        }
+
+     
         private static string ParserText(string code, bool noVal = false)
         {
             string content = String.Empty;
@@ -133,32 +158,20 @@ namespace Dialogic.Server
             return content;
         }
 
-        private IDictionary<string, string> ParsePostData(HttpListenerRequest request)
+        private static string ParsePostData(HttpListenerRequest request)
         {
-            IDictionary<string, string> formVars = new Dictionary<string, string>();
-
+            string result = null;
             if (request.HasEntityBody)
             {
                 Stream body = request.InputStream;
                 Encoding encoding = request.ContentEncoding;
                 StreamReader reader = new System.IO.StreamReader(body, encoding);
-
-                if (request.ContentType.ToLower() == "application/x-www-form-urlencoded")
-                {
-                    string s = reader.ReadToEnd();
-                    string[] pairs = s.Split('&');
-                    for (int i = 0; i < pairs.Length; i++)
-                    {
-                        string[] item = pairs[i].Split('=');
-                        formVars.Add(item[0], Uri.UnescapeDataString(item[1]));
-                    }
-                }
-
+                result = reader.ReadToEnd();
                 body.Close();
                 reader.Close();
             }
 
-            return formVars;
+            return result;
         }
 
         public static void Main()
@@ -166,7 +179,7 @@ namespace Dialogic.Server
             string html = String.Join("\n",
                 File.ReadAllLines("data/index.html", Encoding.UTF8));
 
-            LintServer ws = new LintServer(SendResponse, SERVER_URL);
+            LintServer ws = new LintServer(SendPostResponse, SERVER_URL);
             LintServer.IndexPageContent = html;
             ws.Run();
 

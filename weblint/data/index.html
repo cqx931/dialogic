@@ -48,12 +48,32 @@
             <button class="copy" id="copy">Copy</button>
         </div>
     </form>
-    <section id="result-container" class="%%CCLASS%%">
-        <pre id="result" class="%%RCLASS%%">%%RESULT%%</pre>
+    <section id="result-container" class="">
+        <pre id="result" class="">%%RESULT%%</pre>
     </section>
     </div>
 
     <script>
+    function updatePage(code, data) {
+        $("#main").html(code);
+        $("#result").html(data);
+        $("#result-container").addClass("shown");
+
+         if(data.startsWith("Line")){
+          $("#result").addClass("error");
+         } else {
+         $("#result").addClass("success");
+         }
+
+          // Highlight error
+      if (!$("#result").class == "error") {
+
+       // var idx = errorLine - 1;
+       //  $(".lineno:eq(" + idx  + ")").append("<div class='line-error'></div>");
+      }
+
+    }
+
     $(function () { $(".lined").linedtextarea() });
 
     $(document).ready(function () {
@@ -66,15 +86,25 @@
       $("#validate").click(function () {
 
         event.preventDefault();
+        // TODO: replace with localServer info
         var code = encodeURIComponent($("#main").val());
-        window.location = window.location.href.split('?')[0]+'?code='+code;
+
+        $.ajax({
+          type: "POST",
+          url: "http://172.16.54.164:8080/glint/",
+          data: code,
+          contentType: 'application/x-www-form-urlencoded',
+          success: function(data){
+            console.log("data", data);
+            if (data.length > 0)
+              updatePage(code, data);
+          }
+        });
+
+       <!--window.location = window.location.href.split('?')[0]+'?code='+code;-->
       });
 
-      // Highlight error
-      if (!$("#errorLine").text().includes("ERRORLINE")) {
-        var idx = $("#errorLine").text() - 1;
-        $(".lineno:eq(" + idx  + ")").append("<div class='line-error'></div>");
-      }
+
 
     });
     </script>
