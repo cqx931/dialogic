@@ -1,5 +1,3 @@
-$(function () {
-
 var storageKey = 'dialogic-editor-code';
 var lastSelection = "";
 var myTextarea = $("#main")[0];
@@ -34,6 +32,10 @@ var network = new vis.Network(document.getElementById('network'),
 // Variables
 var isEditMode = false;
 var currentTextId = 1;
+
+$(function () {
+
+
 // ******** General UI ************//
    // Resizing
     var isResizing = false,
@@ -58,7 +60,6 @@ var currentTextId = 1;
         var newRight = offsetRight / window.innerWidth * 100 + "%";
         left.css('width', newLeft);
         right.css('width', newRight);
-        console.log(newLeft, newRight)
     }).on('mouseup', function (e) {
         // stop resizing
         isResizing = false;
@@ -392,7 +393,7 @@ var currentTextId = 1;
                  newData.nodes.push(node);
                  //TODO: parse edges
                }
-               console.log(newData)
+               // console.log(newData)
                chatsOnLoadHandler(newData);
              } catch (e) {
                console.log(e);
@@ -402,7 +403,6 @@ var currentTextId = 1;
 
         reader.readAsText(file);
       }); // Finish all the files
-      console.log(chatData)
 
       $("#loadURLDialog").hide();
   }
@@ -579,9 +579,8 @@ var currentTextId = 1;
     // console.log("editChat: ", nodeId, nodes.get(nodeId), chats[nodeId]);
     // load the editor with id=data.id, name=data.label
     toggleNetworkView("split");
-    $("#chatLabel").text(nodes.get(nodeId).label);
-    updateContent(chatData.chats[nodeId]);
-    currentTextId = nodeId;
+    updateContent(chatData.chats[nodeId-1]);
+    currentTextId = nodeId
   }
 
   /**** Network UI ***/
@@ -593,7 +592,7 @@ var currentTextId = 1;
     } else {
       var newId = addNode(event);
       network.disableEditMode();
-      editNode(event, {id:newId, label:'C(' + new Date() + ")"});
+      editNodeLabel(event, newId);
     }
   });
 
@@ -637,27 +636,38 @@ var currentTextId = 1;
     var networkDiv = $('.vis-network')[0];
     mouseX = e.event.x ? e.event.x : e.event.center.x;
     mouseY = e.event.y ? e.event.y : e.event.center.y;
-    popup.style.left = mouseX - networkDiv.offsetLeft + 'px';
-    popup.style.top = mouseY - networkDiv.offsetTop - 80  +'px';
+    popup.style.left = mouseX - networkDiv.offsetLeft - 40 + 'px';
+    popup.style.top = mouseY - networkDiv.offsetTop - 78  +'px';
   }
 
   function addNode(event) {
-    var updatedIds = nodes.add([{
-        label:'new',
+    var label = 'C(' + Date.now() + ")";
+    var id = chatData.chats.length + 1;
+    nodes.add([{
+        id: id,
+        label:label,
         x:event.pointer.canvas.x,
         y:event.pointer.canvas.y,
-
     }]);
     // initialize chats
-    chats[updatedIds[0]] = "";
-    // console.log(updatedIds[0], network)
-    network.selectNodes([updatedIds[0]]);
-    return updatedIds[0];
+    chatData.chats.push("CHAT " + label);
+    chatData.nodes.push({
+      id:id ,
+      label:label
+    });
+    network.selectNodes([id]);
+    return id;
   }
 
-  function saveNodeData(data,event) {
+  function saveNodeData(id,event) {
       if (isEditMode) {
-        nodes.update(  { "id": data.id, "label":  $('#node-label')[0].value})
+        var label = $('#node-label')[0].value;
+        if (isValidLabel(label)) {
+          nodes.update({ "id": id, "label":  label});
+          //update chatData.nodes, chatData.chats
+          chatData.nodes[id-1]["label"] = label;
+          chatData.chats[id-1] = updateChatLabelInScript(chatData.chats[id-1] , label)
+        }
         if (event.keyCode ==13) {
           $('#node-popUp').hide();
           isEditMode = false;
@@ -665,12 +675,40 @@ var currentTextId = 1;
       }
   }
 
+  function updateChatLabelInScript(originalScript, label) {
+    return originalScript.replace(/(?=CHAT)/g,label);
+  }
 
-  function editNode(event, data) {
+  function isValidLabel(label) {
+
+    if (label == "" ) {
+      alert("Chat label can't be empty.");
+      return false
+    }
+    // check all the chat labels
+    for (var i = 0; i < chatData.nodes.length; i++) {
+      if (label == chatData.nodes[i].label) {
+        alert("Duplicate chat label, please use another chat label.");
+        return false
+      }
+    }
+
+    return true;
+  }
+
+  function getChatLabelFromId(id) {
+    for (var i = 0; i < chatData.nodes.length; i++) {
+      if (id== chatData.nodes[i].id) {
+        return chatData.nodes[i].label;
+      }
+    }
+  }
+
+  function editNodeLabel(event, id) {
      isEditMode = true;
-     document.getElementById('node-label').value = data.label;
+     document.getElementById('node-label').value = getChatLabelFromId(id);
      // $(document).keypress(function(e) {
-       document.onkeypress = saveNodeData.bind(this, data);
+     document.onkeypress = saveNodeData.bind(this, id);
      // document.getElementById('node-cancelButton').onclick = cancelAction.bind(this, callback);
      updatePopUpPosition(event, $('#node-popUp')[0]);
      $('#node-popUp').show();
