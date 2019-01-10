@@ -153,7 +153,8 @@ var currentTextId = 1;
 
     $("#saveChats").click(function ()
     {
-      saveFile(chatDada,"chats");
+      var toSave = chatData.chats.join("\n")
+      saveFile(toSave,"chats");
     });
 
     $('#importFilePicker').on('change', handleFileLoader);
@@ -350,11 +351,11 @@ var currentTextId = 1;
       sendRequest($("#loadPathDiv").serialize());
     }
 
-    function saveFile(obj, name) {
-      var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(obj));
+    function saveFile(data, name) {
+      var dataStr = "data:text/plain;charset=utf-8," + data;
       var dlAnchorElem = document.getElementById('downloadAnchorElem');
       dlAnchorElem.setAttribute("href", dataStr);
-      dlAnchorElem.setAttribute("download", name + ".json");
+      dlAnchorElem.setAttribute("download", name + ".gs");
       dlAnchorElem.click();
     }
 
