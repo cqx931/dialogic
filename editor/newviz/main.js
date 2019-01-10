@@ -55,12 +55,17 @@ var currentTextId = 1;
             return;
         var offsetRight = container.width() - (e.clientX - container.offset().left);
         left.css('right', offsetRight);
-        left.css('width', window.innerWidth - offsetRight);
-        right.css('width', offsetRight);
+        var newLeft = (window.innerWidth - offsetRight) / window.innerWidth * 100 + "%";
+        var newRight = offsetRight / window.innerWidth * 100 + "%";
+        left.css('width', newLeft);
+        right.css('width', newRight);
+        console.log(newLeft, newRight)
     }).on('mouseup', function (e) {
         // stop resizing
         isResizing = false;
     });
+
+
 
     // ******** State Editor ************//
     // loadFromStorage();
@@ -615,7 +620,7 @@ var currentTextId = 1;
     mouseX = e.event.x ? e.event.x : e.event.center.x;
     mouseY = e.event.y ? e.event.y : e.event.center.y;
     popup.style.left = mouseX - networkDiv.offsetLeft + 'px';
-    popup.style.top = mouseY - networkDiv.offsetTop  +'px';
+    popup.style.top = mouseY - networkDiv.offsetTop - 80  +'px';
   }
 
   function addNode(event) {
