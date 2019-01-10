@@ -11,13 +11,12 @@ var editor = CodeMirror.fromTextArea(myTextarea,
 
 //data -> json
 var chatData = {
-  chats: {"1": ""},
-  nodes: {"id":1, "label":"new chat"},
-  edges: {}
+  chats: ["CHAT NewCHAT"],
+  nodes: [{"id":1, "label":"NewCHAT"}],
+  edges: []
 }
 // network
-var chats = {"1": ""};
-var nodes = new vis.DataSet([chatData.nodes]);
+var nodes = new vis.DataSet(chatData.nodes);
 var edges = new vis.DataSet();
 
 var opts = {
@@ -366,9 +365,14 @@ var currentTextId = 1;
       var allData;
 
       // clear all the old data
-      chats = []
       nodes.clear();
       edges.clear();
+      var newData = chatData = {
+        chats: [],
+        nodes: [],
+        edges: []
+      };
+
 
       [].forEach.call(files, function(file) {
         var reader = new FileReader();
@@ -376,9 +380,19 @@ var currentTextId = 1;
         reader.onload = function(e) {
              var dialogData;
              try {
-               var data = JSON.parse(e.target.result);
-               chatData = data;
-               chatsOnLoadHandler(data);
+               var chats = e.target.result.split(/(?=CHAT)/g);
+               for (var i = 0; i < chats.length; i++) {
+                 if (chats[i].indexOf("CHAT") != 0) continue;
+                 newData.chats.push(chats[i]);
+                 label =  /(?<=CHAT )[a-zA-Z_\d]+(?= )/g.exec(chats[i].split("/n")[0])[0];
+                 var node = {};
+                 node["id"] = newData.chats.length-1;
+                 node["label"] = label;
+                 newData.nodes.push(node);
+                 //TODO: parse edges
+               }
+               console.log(newData)
+               chatsOnLoadHandler(newData);
              } catch (e) {
                console.log(e);
                return;
@@ -386,20 +400,23 @@ var currentTextId = 1;
         }
 
         reader.readAsText(file);
-      });
+      }); // Finish all the files
+      console.log(chatData)
 
       $("#loadURLDialog").hide();
   }
 
     function chatsOnLoadHandler(data) {
         if (isValidData(data)) {
-          chats  = Object.assign({}, chats, data.chats); // TODO: key conflict?
+          //add to current chatData
+          chatData.chats.concat(data.chats);
+          chatData.nodes.concat(data.nodes);
+          chatData.edges.concat(data.edges);
           nodes.update(data.nodes);
           edges.update(data.edges);
         }
 
         updateNetworkViewer();
-
         var nodeId = nodes.get()[0].id;
         editChat(nodeId);
         network.focus(nodeId + "");
@@ -562,7 +579,7 @@ var currentTextId = 1;
     // load the editor with id=data.id, name=data.label
     toggleNetworkView("split");
     $("#chatLabel").text(nodes.get(nodeId).label);
-    updateContent(chats[nodeId]);
+    updateContent(chatData.chats[nodeId]);
     currentTextId = nodeId;
   }
 
@@ -575,7 +592,7 @@ var currentTextId = 1;
     } else {
       var newId = addNode(event);
       network.disableEditMode();
-      editNode(event, {id:newId, label:'new'});
+      editNode(event, {id:newId, label:'C(' + new Date() + ")"});
     }
   });
 
